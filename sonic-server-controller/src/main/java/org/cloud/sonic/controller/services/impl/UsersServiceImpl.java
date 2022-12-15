@@ -19,6 +19,7 @@ package org.cloud.sonic.controller.services.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.commons.codec.binary.Base64;
 import org.cloud.sonic.common.exception.SonicException;
 import org.cloud.sonic.common.http.RespEnum;
 import org.cloud.sonic.common.http.RespModel;
@@ -29,6 +30,7 @@ import org.cloud.sonic.controller.models.domain.Roles;
 import org.cloud.sonic.controller.models.domain.Users;
 import org.cloud.sonic.controller.models.dto.UsersDTO;
 import org.cloud.sonic.controller.models.http.ChangePwd;
+import org.cloud.sonic.controller.models.http.SaveJenkins;
 import org.cloud.sonic.controller.models.http.UserInfo;
 import org.cloud.sonic.controller.models.interfaces.UserLoginType;
 import org.cloud.sonic.controller.services.RolesServices;
@@ -50,6 +52,11 @@ import org.springframework.util.StringUtils;
 import springfox.documentation.annotations.Cacheable;
 
 import javax.annotation.Resource;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -90,6 +97,9 @@ public class UsersServiceImpl extends SonicServiceImpl<UsersMapper, Users> imple
 
     @Value("${sonic.user.ldap.objectClass}")
     private String objectClass;
+
+    @Value("${sonic.user.ldap.providerUrl}")
+    private String providerUrl;
 
     @Autowired
     @Lazy
@@ -141,29 +151,75 @@ public class UsersServiceImpl extends SonicServiceImpl<UsersMapper, Users> imple
         return token;
     }
 
-    private boolean checkLdapAuthenticate(UserInfo userInfo, boolean create) {
+    private boolean checkLdapCtxFactory(UserInfo userInfo, boolean create) {
         if (!ldapEnable) return false;
         String username = userInfo.getUserName();
         String password = userInfo.getPassword();
         logger.info("login check content username {}", username);
-        AndFilter filter = new AndFilter();
-        filter.and(new EqualsFilter("objectclass", objectClass)).and(new EqualsFilter(userId, username));
+        DirContext ctx = null;
         try {
-            boolean authResult = ldapTemplate.authenticate(userBaseDN, filter.toString(), password);
-            if (create && authResult) {
+            String principal = "uid=" + username + "," + userId;
+            Hashtable<String, String> env = new Hashtable<>();
+            env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+            logger.info("providerUrl: " + providerUrl);
+            if (providerUrl.startsWith("ldap://")) {
+                env.put(Context.PROVIDER_URL, providerUrl);
+            } else {
+                env.put(Context.PROVIDER_URL, "ldap://" + providerUrl);
+            }
+            env.put(Context.SECURITY_AUTHENTICATION, "simple");
+            env.put(Context.SECURITY_PRINCIPAL, principal);
+            env.put(Context.SECURITY_CREDENTIALS, password);
+            ctx = new InitialDirContext(env);
+            ctx.close();
+            logger.info(ctx.toString());
+            if (create) {
                 save(buildUser(userInfo));
             }
-            return authResult;
+            return true;
         } catch (Exception e) {
             logger.error("ldap login failed, cause: {}", e);
             return false;
+        } finally {
+            if (null != ctx) {
+                try {
+                    ctx.close();
+                } catch (NamingException e) {
+                    logger.error("ldap login failed, cause: {}", e);
+                }
+            }
         }
+    }
+
+    private boolean checkLdapAuthenticate(UserInfo userInfo, boolean create) {
+        return checkLdapCtxFactory(userInfo, create);
+//        if (!ldapEnable) return false;
+//        String username = userInfo.getUserName();
+//        String password = userInfo.getPassword();
+//        logger.info("login check content username {}", username);
+//        AndFilter filter = new AndFilter();
+//        filter.and(new EqualsFilter("objectclass", objectClass)).and(new EqualsFilter(userId, username));
+//        try {
+//            boolean authResult = ldapTemplate.authenticate(userBaseDN, filter.toString(), password);
+//            if (create && authResult) {
+//                save(buildUser(userInfo));
+//            }
+//            return authResult;
+//        } catch (Exception e) {
+//            logger.error("ldap login failed, cause: {}", e);
+//            return false;
+//        }
     }
 
     private Users buildUser(UserInfo userInfo) {
         Users users = new Users();
         users.setUserName(userInfo.getUserName());
-        users.setPassword("");
+        Base64 base64 = new Base64();
+        String pwd = userInfo.getUserName().toLowerCase() + ":" + userInfo.getPassword();
+        // 打通jenkins需要用到密码信息
+        users.setPassword(base64.encodeAsString(pwd.getBytes()));
+        logger.info("用户：" + users.getUserName());
+        logger.info("密码：" + users.getPassword());
         users.setSource(UserLoginType.LDAP);
         return users;
     }
@@ -172,13 +228,39 @@ public class UsersServiceImpl extends SonicServiceImpl<UsersMapper, Users> imple
     public Users getUserInfo(String token) {
         String name = jwtTokenTool.getUserName(token);
         if (name != null) {
+            // 需要返回密码，打通jenkins需要
             Users users = findByUserName(name);
-            users.setPassword("");
+//            users.setPassword("");
             return users;
         } else {
             return null;
         }
     }
+
+    @Override
+    public RespModel<String> saveJenkinsUrl(String token, SaveJenkins jenkins) {
+        if (!jenkins.getUrl().startsWith("http")) {
+            return new RespModel(3004, "error.unknown");
+        }
+        String name = jwtTokenTool.getUserName(token);
+        if (name != null) {
+            Users users = findByUserName(name);
+            if (users != null) {
+                String url = jenkins.getUrl();
+                if (url.endsWith("/")) {
+                    url = url.substring(0, url.length() - 1);
+                }
+                users.setJenkinsUrl(url);
+                save(users);
+                return new RespModel(2000, "ok.handle");
+            } else {
+                return new RespModel(RespEnum.UNAUTHORIZED);
+            }
+        } else {
+            return new RespModel(RespEnum.UNAUTHORIZED);
+        }
+    }
+
 
     @Override
     public RespModel<String> resetPwd(String token, ChangePwd changePwd) {

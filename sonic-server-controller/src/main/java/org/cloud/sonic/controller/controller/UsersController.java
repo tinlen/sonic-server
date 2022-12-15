@@ -31,6 +31,7 @@ import org.cloud.sonic.controller.models.domain.Roles;
 import org.cloud.sonic.controller.models.domain.Users;
 import org.cloud.sonic.controller.models.dto.UsersDTO;
 import org.cloud.sonic.controller.models.http.ChangePwd;
+import org.cloud.sonic.controller.models.http.SaveJenkins;
 import org.cloud.sonic.controller.models.http.UserInfo;
 import org.cloud.sonic.controller.services.RolesServices;
 import org.cloud.sonic.controller.services.UsersService;
@@ -165,5 +166,18 @@ public class UsersController {
                                          @RequestParam(name = "userId") Integer userId) {
 
         return RespModel.result(RespEnum.UPDATE_OK, usersService.updateUserRole(userId, roleId));
+    }
+
+    @WebAspect
+    @WhiteUrl
+    @ApiOperation(value = "jenkins构建地址", notes = "修改jenkins构建地址")
+    @PostMapping("/saveJenkinsUrl")
+    public RespModel<String> saveJenkinsUrl(HttpServletRequest request, @Validated @RequestBody SaveJenkins jenkinsUrl) {
+        if (request.getHeader("SonicToken") != null) {
+            String token = request.getHeader("SonicToken");
+            return usersService.saveJenkinsUrl(token, jenkinsUrl);
+        } else {
+            return new RespModel<>(RespEnum.UNAUTHORIZED);
+        }
     }
 }

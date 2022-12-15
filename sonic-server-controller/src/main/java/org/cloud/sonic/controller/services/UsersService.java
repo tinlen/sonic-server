@@ -9,6 +9,7 @@ import org.cloud.sonic.controller.models.base.CommentPage;
 import org.cloud.sonic.controller.models.domain.Users;
 import org.cloud.sonic.controller.models.dto.UsersDTO;
 import org.cloud.sonic.controller.models.http.ChangePwd;
+import org.cloud.sonic.controller.models.http.SaveJenkins;
 import org.cloud.sonic.controller.models.http.UserInfo;
 
 public interface UsersService extends IService<Users> {
@@ -38,4 +39,6 @@ public interface UsersService extends IService<Users> {
      * @return
      */
     boolean updateUserRole(Integer userId, Integer roleId);
+
+    RespModel<String> saveJenkinsUrl(String token, SaveJenkins jenkinsUrl);
 }

@@ -55,4 +55,8 @@ public class Users implements Serializable, TypeConverter<Users, UsersDTO> {
     @TableField
     @Column(value = "source", isNull = false, defaultValue = UserLoginType.LOCAL, comment = "用户来源")
     String source = UserLoginType.LOCAL;
+
+    @TableField
+    @Column(value = "jenkins_url", isNull = true, defaultValue = "", comment = "CI/CD jenkins 构建地址")
+    String jenkinsUrl;
 }

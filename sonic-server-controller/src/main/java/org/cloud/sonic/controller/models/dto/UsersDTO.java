@@ -39,4 +39,8 @@ public class UsersDTO implements Serializable, TypeConverter<UsersDTO, Users> {
 
     @ApiModelProperty(value = "角色名称", required = false, example = "tester")
     String roleName;
+
+    @Positive
+    @ApiModelProperty(value = "jenkins构建地址", required = false, example = "http://10.23.*.*:8080/")
+    String jenkinsUrl;
 }
