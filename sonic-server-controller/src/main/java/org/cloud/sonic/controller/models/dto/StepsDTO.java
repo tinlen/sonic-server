@@ -3,15 +3,15 @@ package org.cloud.sonic.controller.models.dto;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
-import org.cloud.sonic.controller.models.base.TypeConverter;
-import org.cloud.sonic.controller.models.domain.Steps;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.*;
 import lombok.experimental.Accessors;
+import org.cloud.sonic.controller.models.base.TypeConverter;
+import org.cloud.sonic.controller.models.domain.Steps;
 import org.cloud.sonic.controller.models.enums.ConditionEnum;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import java.io.Serializable;
 import java.util.List;
@@ -45,7 +45,7 @@ public class StepsDTO implements Serializable, TypeConverter<StepsDTO, Steps> {
     @ApiModelProperty(value = "类型", required = true, example = "1")
     Integer platform;
 
-    @NotBlank
+    @NotNull
     @ApiModelProperty(value = "步骤类型", required = true, example = "click")
     String stepType;
 

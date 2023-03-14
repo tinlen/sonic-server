@@ -46,6 +46,7 @@ public class SonicRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         resourceInit();
+        remoteInit();
     }
 
     /**
@@ -56,15 +57,31 @@ public class SonicRunner implements ApplicationRunner {
 
             ConfList conf = confListService.searchByKey(ConfType.RESOURCE);
             if (conf != null && Objects.equals(conf.getContent(), version)) {
-                log.info("version: {},resource has been init...", version);
+                log.info("version: {}, resource has been init...", version);
                 return;
             }
             resourcesService.init();
-            log.info("version: {}, resource  init finish!", version);
+            log.info("version: {}, resource init finish!", version);
             confListService.save(ConfType.RESOURCE, version, null);
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("init resource error", e);
+        }
+    }
+
+    private void remoteInit() {
+        try {
+            ConfList conf = confListService.searchByKey(ConfType.REMOTE_DEBUG_TIMEOUT);
+            if (conf != null) {
+                log.info("remote conf has been init...");
+                return;
+            }
+
+            confListService.save(ConfType.REMOTE_DEBUG_TIMEOUT, "480", null);
+            log.info("remote conf init finish!");
+
+        } catch (Exception e) {
+            log.error("init remote conf error", e);
         }
     }
 }

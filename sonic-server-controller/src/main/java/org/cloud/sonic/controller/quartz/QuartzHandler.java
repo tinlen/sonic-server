@@ -18,7 +18,6 @@
 package org.cloud.sonic.controller.quartz;
 
 import com.alibaba.fastjson.JSONObject;
-import org.cloud.sonic.controller.mapper.JobsMapper;
 import org.cloud.sonic.controller.models.domain.Jobs;
 import org.cloud.sonic.controller.models.interfaces.JobType;
 import org.cloud.sonic.controller.services.JobsService;
@@ -251,9 +250,7 @@ public class QuartzHandler {
 
     public void createSysTrigger() {
         for (String type : typeList) {
-//            从数据库中获取数据，然后创建
             Jobs job = jobsService.findByType(type);
-//            首次部署，初始化系统定时任务
             if (job == null) {
                 job = initSysJob(type);
             }
@@ -263,6 +260,7 @@ public class QuartzHandler {
 
     /**
      * 初始化系统定时任务
+     *
      * @param type 系统定时任务类型
      */
     private Jobs initSysJob(String type) {

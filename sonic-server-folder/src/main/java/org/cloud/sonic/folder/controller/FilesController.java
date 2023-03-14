@@ -6,7 +6,10 @@ import org.cloud.sonic.folder.tools.FileTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.text.ParseException;
@@ -40,17 +43,20 @@ public class FilesController {
         List<String> fileList = Arrays.asList("imageFiles", "recordFiles", "logFiles", "packageFiles");
         cachedThreadPool.execute(() -> {
             for (String fileType : fileList) {
-                File[] type = new File(fileType).listFiles();
-                for (File dateFile : type) {
-                    try {
-                        if (timeMillis - sf.parse(dateFile.getName()).getTime()
-                                > day * 86400000L) {
-                            logger.info("clean begin! " + dateFile.getPath());
-                            fileTool.deleteDir(dateFile);
+                File f = new File(fileType);
+                File[] type = f.listFiles();
+                if (type != null) {
+                    for (File dateFile : type) {
+                        try {
+                            if (timeMillis - sf.parse(dateFile.getName()).getTime()
+                                    > day * 86400000L) {
+                                logger.info("clean begin! " + dateFile.getPath());
+                                fileTool.deleteDir(dateFile);
+                            }
+                        } catch (ParseException e) {
+                            logger.info("Parse file name error, cause: " + dateFile.getPath());
+                            logger.error(e.getMessage());
                         }
-                    } catch (ParseException e) {
-                        logger.info("Parse file name error, cause: " + dateFile.getPath());
-                        logger.error(e.getMessage());
                     }
                 }
             }

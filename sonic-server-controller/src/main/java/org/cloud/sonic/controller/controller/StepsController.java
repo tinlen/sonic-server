@@ -18,6 +18,10 @@
 package org.cloud.sonic.controller.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.cloud.sonic.common.config.WebAspect;
 import org.cloud.sonic.common.http.RespEnum;
 import org.cloud.sonic.common.http.RespModel;
@@ -28,10 +32,6 @@ import org.cloud.sonic.controller.models.domain.Steps;
 import org.cloud.sonic.controller.models.dto.StepsDTO;
 import org.cloud.sonic.controller.models.http.StepSort;
 import org.cloud.sonic.controller.services.StepsService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -77,17 +77,17 @@ public class StepsController {
         return new RespModel<>(RespEnum.SEARCH_OK, stepsService.findByCaseIdOrderBySort(caseId));
     }
 
-//    @WebAspect
-//    @ApiOperation(value = "移出测试用例", notes = "将步骤从测试用例移出")
-//    @ApiImplicitParam(name = "id", value = "步骤id", dataTypeClass = Integer.class)
-//    @GetMapping("/resetCaseId")
-//    public RespModel<String> resetCaseId(@RequestParam(name = "id") int id) {
-//        if (stepsService.resetCaseId(id)) {
-//            return new RespModel<>(2000, "移出测试用例成功！");
-//        } else {
-//            return new RespModel<>(RespEnum.ID_NOT_FOUND);
-//        }
-//    }
+    @WebAspect
+    @ApiOperation(value = "移出测试用例", notes = "将步骤从测试用例移出")
+    @ApiImplicitParam(name = "id", value = "步骤id", dataTypeClass = Integer.class)
+    @GetMapping("/resetCaseId")
+    public RespModel resetCaseId(@RequestParam(name = "id") int id) {
+        if (stepsService.resetCaseId(id)) {
+            return new RespModel<>(RespEnum.HANDLE_OK);
+        } else {
+            return new RespModel<>(RespEnum.ID_NOT_FOUND);
+        }
+    }
 
     @WebAspect
     @ApiOperation(value = "删除操作步骤", notes = "将步骤删除，并且从所有公共步骤里移除")
@@ -104,7 +104,7 @@ public class StepsController {
     @WebAspect
     @ApiOperation(value = "删除操作步骤检查", notes = "返回步骤所属的公共步骤")
     @ApiImplicitParam(name = "id", value = "步骤id", dataTypeClass = Integer.class)
-    @GetMapping("deleteCheck")
+    @GetMapping("/deleteCheck")
     public RespModel<List<PublicSteps>> deleteCheck(@RequestParam(name = "id") int id) {
         return new RespModel<>(RespEnum.SEARCH_OK, publicStepsMapper.listPubStepsByStepId(id));
     }
@@ -137,6 +137,7 @@ public class StepsController {
             return new RespModel<>(RespEnum.ID_NOT_FOUND);
         }
     }
+
     @WebAspect
     @ApiOperation(value = "搜索查找步骤列表", notes = "查找对应用例id下的步骤列表（分页）")
     @ApiImplicitParams(value = {
@@ -151,9 +152,9 @@ public class StepsController {
                                                           @RequestParam(name = "platform") int platform,
                                                           @RequestParam(name = "page") int page,
                                                           @RequestParam(name = "pageSize") int pageSize,
-                                                          @RequestParam(name="searchContent")String searchContent) {
+                                                          @RequestParam(name = "searchContent") String searchContent) {
         return new RespModel<>(RespEnum.SEARCH_OK, stepsService.searchFindByProjectIdAndPlatform(projectId, platform,
-                page,pageSize,searchContent));
+                page, pageSize, searchContent));
     }
 
     @WebAspect
